@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>电商营销岗位标签可视化系统</title>
+    <!-- 引入ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <!-- 引入ECharts词云扩展 -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts-wordcloud@2.0.0/dist/echarts-wordcloud.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        }
+        
+        body {
+            background-color: #f8fafc;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 25px;
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: white;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.2);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(800px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .chart-container {
+            background-color: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .chart-container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        .chart-title {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            border-bottom: 2px solid #f1f5f9;
+            padding-bottom: 12px;
+        }
+        
+        .chart-title i {
+            margin-right: 10px;
+            color: #8b5cf6;
+        }
+        
+        .chart-wrapper {
+            height: 500px;
+            width: 100%;
+        }
+        
+        .data-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .summary-card {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .summary-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #8b5cf6;
+            margin: 10px 0;
+        }
+        
+        .summary-label {
+            font-size: 1rem;
+            color: #64748b;
+        }
+        
+        .tag-cloud-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .tag-item {
+            background-color: #f1f5f9;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+        
+        .tag-item:hover {
+            background-color: #e0e7ff;
+            transform: translateY(-2px);
+        }
+        
+        .tag-freq-1 { font-size: 1rem; background-color: #f1f5f9; }
+        .tag-freq-2 { font-size: 1.1rem; background-color: #e0e7ff; }
+        .tag-freq-3 { font-size: 1.3rem; background-color: #c7d2fe; }
+        .tag-freq-4 { font-size: 1.5rem; background-color: #a5b4fc; color: white; }
+        .tag-freq-5 { font-size: 1.7rem; background-color: #8b5cf6; color: white; }
+        
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .control-group {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .control-btn {
+            padding: 8px 16px;
+            background-color: #f1f5f9;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+        
+        .control-btn.active {
+            background-color: #8b5cf6;
+            color: white;
+        }
+        
+        .control-btn:hover:not(.active) {
+            background-color: #e2e8f0;
+        }
+        
+        .data-source {
+            font-size: 0.9rem;
+            color: #94a3b8;
+            text-align: right;
+            margin-top: 10px;
+            font-style: italic;
+        }
+        
+        .section-description {
+            color: #64748b;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #64748b;
+            font-size: 0.9rem;
+            border-top: 1px solid #e2e8f0;
+            margin-top: 30px;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 1400px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 900px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .dashboard {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .chart-container {
+                padding: 15px;
+            }
+            
+            .chart-wrapper {
+                height: 400px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .chart-title {
+                font-size: 1.3rem;
+            }
+        }
+        
+        .legend {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+        
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+            margin-right: 6px;
+        }
+        
+        .matrix-cell {
+            cursor: pointer;
+        }
+        
+        .matrix-cell:hover {
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>电商营销岗位标签可视化系统</h1>
+            <p class="subtitle">基于电商营销岗位职位标签的词频统计、共现网络分析和关联矩阵可视化分析</p>
+        </header>
+        
+        <div class="data-summary">
+            <div class="summary-card">
+                <div class="summary-value">137</div>
+                <div class="summary-label">最高频标签出现次数</div>
+                <div class="summary-label">"短视频"标签在岗位中出现137次</div>
+            </div>
+            
+            <div class="summary-card">
+                <div class="summary-value">20</div>
+                <div class="summary-label">高频标签数量</div>
+                <div class="summary-label">统计出现频率最高的20个岗位标签</div>
+            </div>
+            
+            <div class="summary-card">
+                <div class="summary-value">85</div>
+                <div class="summary-label">最强标签关联</div>
+                <div class="summary-label">"短视频"与"直播"共现85次</div>
+            </div>
+            
+            <div class="summary-card">
+                <div class="summary-value">63</div>
+                <div class="summary-label">总标签数量</div>
+                <div class="summary-label">经过分词和同义合并后的标签总数</div>
+            </div>
+        </div>
+        
+        <div class="dashboard">
+            <!-- 词频统计图表 -->
+            <div class="chart-container">
+                <div class="chart-title">
+                    <i>📊</i> 职位标签词频统计（TOP20）
+                </div>
+                <p class="section-description">展示电商营销岗位中最常出现的20个技能标签及其出现频率，反映当前市场对电商人才的核心能力要求。</p>
+                <div class="controls">
+                    <div class="control-group">
+                        <button class="control-btn active" data-chart="wordcloud" data-type="wordcloud">词云图</button>
+                        <button class="control-btn" data-chart="wordcloud" data-type="bar">条形图</button>
+                        <button class="control-btn" data-chart="wordcloud" data-type="treemap">矩形树图</button>
+                    </div>
+                    <div class="data-source">数据来源：模拟电商岗位数据，基于63个标签池</div>
+                </div>
+                <div id="wordcloud-chart" class="chart-wrapper"></div>
+                
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #8b5cf6;"></div>
+                        <span>出现频率 > 100</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #a5b4fc;"></div>
+                        <span>出现频率 80-100</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #c7d2fe;"></div>
+                        <span>出现频率 60-80</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #e0e7ff;"></div>
+                        <span>出现频率 < 60</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 标签共现网络图 -->
+            <div class="chart-container">
+                <div class="chart-title">
+                    <i>🕸️</i> 标签共现网络图
+                </div>
+                <p class="section-description">展示高频标签之间的共现关系，节点大小表示标签出现频率，连线粗细表示标签共现强度，帮助识别技能组合模式。</p>
+                <div class="controls">
+                    <div class="control-group">
+                        <button class="control-btn active" data-chart="network" data-type="force">力导向图</button>
+                        <button class="control-btn" data-chart="network" data-type="circular">环形布局</button>
+                        <button class="control-btn" data-chart="network" data-type="matrix">矩阵布局</button>
+                    </div>
+                    <div class="data-source">数据来源：模拟电商岗位数据，共现关系基于岗位-标签关联表</div>
+                </div>
+                <div id="network-chart" class="chart-wrapper"></div>
+                
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #8b5cf6;"></div>
+                        <span>核心技能标签（高频）</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #10b981;"></div>
+                        <span>运营技能标签</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #f59e0b;"></div>
+                        <span>内容创作标签</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #ef4444;"></div>
+                        <span>数据分析标签</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 标签关联矩阵图 -->
+            <div class="chart-container">
+                <div class="chart-title">
+                    <i>🔲</i> 岗位-标签关联矩阵
+                </div>
+                <p class="section-description">展示标签之间的共现强度矩阵，颜色深浅表示两个标签在岗位描述中同时出现的频率，可用于识别强关联的技能组合。</p>
+                <div class="controls">
+                    <div class="control-group">
+                        <button class="control-btn active" data-chart="matrix" data-type="heatmap">热力图</button>
+                        <button class="control-btn" data-chart="matrix" data-type="correlation">相关性矩阵</button>
+                    </div>
+                    <div class="data-source">数据来源：模拟电商岗位数据，方形CSV共现矩阵</div>
+                </div>
+                <div id="matrix-chart" class="chart-wrapper"></div>
+                
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #1e3a8a;"></div>
+                        <span>强关联（共现 > 70）</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #3b82f6;"></div>
+                        <span>中等关联（共现 40-70）</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #93c5fd;"></div>
+                        <span>弱关联（共现 20-40）</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #dbeafe;"></div>
+                        <span>无关联/自关联（共现 < 20）</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="chart-container">
+            <div class="chart-title">
+                <i>🏷️</i> 高频标签池预览
+            </div>
+            <p class="section-description">完整的电商营销岗位标签池（已分词+同义合并），共63个标签，按出现频率从高到低排列：</p>
+            <div class="tag-cloud-container" id="tag-cloud-preview"></div>
+        </div>
+        
+        <footer>
+            <p>电商营销岗位标签可视化系统 &copy; 2023 | 基于ECharts实现 | 数据为模拟数据，基于常见电商岗位要求生成</p>
+        </footer>
+    </div>
+
+    <script>
+        // 初始化数据
+        const tagData = {
+            // 高频TOP20标签及频率
+            top20Tags: [
+                { name: '短视频', value: 137 },
+                { name: '直播', value: 129 },
+                { name: '抖音', value: 119 },
+                { name: '小红书', value: 108 },
+                { name: '私域', value: 95 },
+                { name: '内容策划', value: 93 },
+                { name: '数据分析', value: 91 },
+                { name: 'KOL', value: 89 },
+                { name: 'ROI', value: 86 },
+                { name: '整合营销', value: 82 },
+                { name: '爆款', value: 80 },
+                { name: '投流', value: 78 },
+                { name: '社群', value: 76 },
+                { name: '转化率', value: 74 },
+                { name: '618/双11', value: 72 },
+                { name: 'TikTok', value: 70 },
+                { name: '跨境电商', value: 68 },
+                { name: '品牌', value: 66 },
+                { name: '脚本', value: 64 },
+                { name: '创意', value: 62 }
+            ],
+            
+            // 完整标签池
+            allTags: [
+                '短视频', '直播', '抖音', '小红书', '私域', '社群', '内容策划', '数据分析', 'KOL', 'KOC', 
+                '投流', 'ROI', '品牌', '爆款', '爆款打造', '整合营销', '618/双11', '跨境电商', 'TikTok', 'AI工具', 
+                '用户洞察', '脚本', '图文', '投后复盘', '流量获取', 'GMV', '转化率', '客单价', '复购率', '达人合作', 
+                '媒介投放', '创意', '文案', '视觉', '页面策划', 'SEO/SEM', '直通车', '千川', '万相台', '推广工具', 
+                'Excel', 'Python', 'BI', 'SQL', '英语', '泰语', '日语', '沟通能力', '抗压', '自驱', 
+                '团队协作', '项目管理', '跨部门', '0-1', '从0到1', '带团队', '创业', '合伙人', '五险一金', '双休', 
+                '远程', '实习', '应届生', '接受小白'
+            ],
+            
+            // 标签分类
+            tagCategories: {
+                '核心技能': ['短视频', '直播', '抖音', '小红书', '私域', '社群', 'TikTok'],
+                '运营技能': ['投流', 'ROI', '爆款', '整合营销', '跨境电商', '618/双11', '转化率', 'GMV', '客单价', '复购率'],
+                '内容创作': ['内容策划', '脚本', '图文', '创意', '文案', '视觉', '页面策划'],
+                '数据分析': ['数据分析', '投后复盘', '用户洞察', 'Excel', 'Python', 'BI', 'SQL'],
+                '软技能': ['沟通能力', '抗压', '自驱', '团队协作', '项目管理', '跨部门', '英语', '泰语', '日语']
+            },
+            
+            // 生成标签共现矩阵（模拟数据）
+            generateCooccurrenceMatrix: function() {
+                const tags = this.top20Tags.map(tag => tag.name);
+                const matrix = [];
+                
+                // 初始化20x20矩阵，对角线为0
+                for (let i = 0; i < tags.length; i++) {
+                    matrix[i] = new Array(tags.length).fill(0);
+                }
+                
+                // 生成模拟的共现数据
+                // 核心假设：相关标签之间共现频率更高
+                for (let i = 0; i < tags.length; i++) {
+                    for (let j = i + 1; j < tags.length; j++) {
+                        // 基础共现值，基于两个标签的频率
+                        const baseValue = Math.min(
+                            this.top20Tags[i].value / 2, 
+                            this.top20Tags[j].value / 2
+                        ) * 0.5;
+                        
+                        // 添加随机波动
+                        const randomFactor = 0.7 + Math.random() * 0.6;
+                        
+                        // 相关标签组之间共现频率更高
+                        let groupFactor = 1.0;
+                        const tag1 = tags[i];
+                        const tag2 = tags[j];
+                        
+                        // 检查是否属于同一标签组
+                        for (const category in this.tagCategories) {
+                            const categoryTags = this.tagCategories[category];
+                            if (categoryTags.includes(tag1) && categoryTags.includes(tag2)) {
+                                groupFactor = 1.8; // 同一组内的标签共现频率更高
+                                break;
+                            }
+                        }
+                        
+                        // 特别强的关联
+                        if (
+                            (tag1 === '短视频' && tag2 === '直播') ||
+                            (tag1 === '直播' && tag2 === '短视频') ||
+                            (tag1 === '抖音' && tag2 === '短视频') ||
+                            (tag1 === '短视频' && tag2 === '抖音') ||
+                            (tag1 === '小红书' && tag2 === '内容策划') ||
+                            (tag1 === '内容策划' && tag2 === '小红书') ||
+                            (tag1 === '数据分析' && tag2 === 'ROI') ||
+                            (tag1 === 'ROI' && tag2 === '数据分析')
+                        ) {
+                            groupFactor = 2.2;
+                        }
+                        
+                        const cooccurrence = Math.round(baseValue * randomFactor * groupFactor);
+                        matrix[i][j] = cooccurrence;
+                        matrix[j][i] = cooccurrence; // 对称矩阵
+                    }
+                }
+                
+                return {
+                    tags: tags,
+                    matrix: matrix
+                };
+            },
+            
+            // 生成网络图数据
+            generateNetworkData: function() {
+                const tags = this.top20Tags.map(tag => tag.name);
+                const matrixData = this.generateCooccurrenceMatrix();
+                const matrix = matrixData.matrix;
+                
+                // 节点数据
+                const nodes = [];
+                for (let i = 0; i < tags.length; i++) {
+                    const tag = tags[i];
+                    const value = this.top20Tags[i].value;
+                    
+                    // 确定节点类别
+                    let category = '其他';
+                    for (const cat in this.tagCategories) {
+                        if (this.tagCategories[cat].includes(tag)) {
+                            category = cat;
+                            break;
+                        }
+                    }
+                    
+                    // 确定节点大小
+                    const symbolSize = 10 + (value / 137) * 30; // 根据频率调整大小
+                    
+                    nodes.push({
+                        name: tag,
+                        value: value,
+                        symbolSize: symbolSize,
+                        category: category,
+                        itemStyle: {
+                            color: this.getCategoryColor(category)
+                        }
+                    });
+                }
+                
+                // 边数据
+                const edges = [];
+                for (let i = 0; i < tags.length; i++) {
+                    for (let j = i + 1; j < tags.length; j++) {
+                        const cooccurrence = matrix[i][j];
+                        // 只添加较强的关联
+                        if (cooccurrence > 30) {
+                            edges.push({
+                                source: tags[i],
+                                target: tags[j],
+                                value: cooccurrence,
+                                lineStyle: {
+                                    width: cooccurrence / 20, // 根据共现强度调整线宽
+                                    color: this.getEdgeColor(cooccurrence)
+                                }
+                            });
+                        }
+                    }
+                }
+                
+                return { nodes: nodes, edges: edges };
+            },
+            
+            // 获取类别颜色
+            getCategoryColor: function(category) {
+                const colorMap = {
+                    '核心技能': '#8b5cf6',
+                    '运营技能': '#10b981',
+                    '内容创作': '#f59e0b',
+                    '数据分析': '#ef4444',
+                    '软技能': '#8b5cf6',
+                    '其他': '#94a3b8'
+                };
+                return colorMap[category] || '#94a3b8';
+            },
+            
+            // 获取边颜色
+            getEdgeColor: function(value) {
+                if (value > 70) return 'rgba(139, 92, 246, 0.8)';
+                if (value > 50) return 'rgba(139, 92, 246, 0.6)';
+                if (value > 30) return 'rgba(139, 92, 246, 0.4)';
+                return 'rgba(139, 92, 246, 0.2)';
+            }
+        };
+        
+        // 图表实例存储
+        const chartInstances = {};
+        
+        // 初始化所有图表
+        function initCharts() {
+            // 初始化词频图表
+            initWordCloudChart('wordcloud');
+            
+            // 初始化网络图
+            initNetworkChart('force');
+            
+            // 初始化矩阵图
+            initMatrixChart('heatmap');
+            
+            // 初始化标签云预览
+            initTagCloudPreview();
+            
+            // 绑定图表切换按钮事件
+            bindChartControlButtons();
+        }
+        
+        // 初始化词频图表
+        function initWordCloudChart(type) {
+            const chartDom = document.getElementById('wordcloud-chart');
+            chartInstances.wordcloud = echarts.init(chartDom);
+            
+            let option;
+            if (type === 'wordcloud') {
+                option = {
+                    tooltip: {
+                        formatter: function(params) {
+                            return `${params.name}<br/>出现频率: ${params.value}次`;
+                        }
+                    },
+                    series: [{
+                        type: 'wordCloud',
+                        shape: 'circle',
+                        left: 'center',
+                        top: 'center',
+                        width: '90%',
+                        height: '90%',
+                        right: null,
+                        bottom: null,
+                        sizeRange: [20, 60],
+                        rotationRange: [0, 0],
+                        rotationStep: 45,
+                        gridSize: 8,
+                        drawOutOfBound: false,
+                        textStyle: {
+                            fontFamily: 'sans-serif',
+                            fontWeight: 'bold',
+                            color: function(params) {
+                                const value = params.value;
+                                if (value > 100) return '#8b5cf6';
+                                if (value > 80) return '#a5b4fc';
+                                if (value > 60) return '#c7d2fe';
+                                return '#e0e7ff';
+                            }
+                        },
+                        emphasis: {
+                            focus: 'self',
+                            textStyle: {
+                                shadowBlur: 10,
+                                shadowColor: '#333'
+                            }
+                        },
+                        data: tagData.top20Tags
+                    }],
+                    title: {
+                        text: '电商营销岗位高频标签词云',
+                        left: 'center',
+                        top: 10,
+                        textStyle: {
+                            fontSize: 16,
+                            fontWeight: 'normal',
+                            color: '#2c3e50'
+                        }
+                    }
+                };
+            } else if (type === 'bar') {
+                // 条形图
+                const sortedTags = [...tagData.top20Tags].sort((a, b) => a.value - b.value);
+                
+                option = {
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: { type: 'shadow' }
+                    },
+                    grid: {
+                        left: '3%',
+                        right: '4%',
+                        bottom: '3%',
+                        top: '10%',
+                        containLabel: true
+                    },
+                    xAxis: {
+                        type: 'value',
+                        name: '出现频率',
+                        axisLabel: {
+                            color: '#666'
+                        }
+                    },
+                    yAxis: {
+                        type: 'category',
+                        data: sortedTags.map(tag => tag.name),
+                        axisLabel: {
+                            color: '#666'
+                        }
+                    },
+                    series: [{
+                        data: sortedTags.map(tag => tag.value),
+                        type: 'bar',
+                        itemStyle: {
+                            color: function(params) {
+                                const value = sortedTags[params.dataIndex].value;
+                                if (value > 100) return '#8b5cf6';
+                                if (value > 80) return '#a5b4fc';
+                                if (value > 60) return '#c7d2fe';
+                                return '#e0e7ff';
+                            }
+                        },
+                        label: {
+                            show: true,
+                            position: 'right',
+                            color: '#333'
+                        }
+                    }],
+                    title: {
+                        text: '电商营销岗位高频标签条形图',
+                        left: 'center',
+                        top: 10,
+                        textStyle: {
+                            fontSize: 16,
+                            fontWeight: 'normal',
+                            color: '#2c3e50'
+                        }
+                    }
+                };
+            } else {
+                // 矩形树图
+                option = {
+                    tooltip: {
+                        formatter: function(params) {
+                            return `${params.data.name}<br/>出现频率: ${params.data.value}次`;
+                        }
+                    },
+                    series: [{
+                        type: 'treemap',
+                        data: tagData.top20Tags,
+                        leafDepth: 1,
+                        label: {
+                            show: true,
+                            formatter: '{b}'
+                        },
+                        upperLabel: {
+                            show: true,
+                            height: 30
+                        },
+                        itemStyle: {
+                            borderColor: '#fff'
+                        },
+                        levels: [
+                            {
+                                itemStyle: {
+                                    borderWidth: 0,
+                                    gapWidth: 5
+                                }
+                            },
+                            {
+                                colorSaturation: [0.3, 0.6],
+                                itemStyle: {
+                                    borderWidth: 5,
+                                    gapWidth: 1,
+                                    borderColorSaturation: 0.7
+                                }
+                            }
+                        ]
+                    }],
+                    title: {
+                        text: '电商营销岗位高频标签矩形树图',
+                        left: 'center',
+                        top: 10,
+                        textStyle: {
+                            fontSize: 16,
+                            fontWeight: 'normal',
+                            color: '#2c3e50'
+                        }
+                    }
+                };
+            }
+            
+            chartInstances.wordcloud.setOption(option);
+        }
+        
+        // 初始化网络图
+        function initNetworkChart(layoutType) {
+            const chartDom = document.getElementById('network-chart');
+            chartInstances.network = echarts.init(chartDom);
+            
+            const networkData = tagData.generateNetworkData();
+            
+            let option = {
+                tooltip: {
+                    formatter: function(params) {
+                        if (params.dataType === 'node') {
+                            return `${params.data.name}<br/>出现频率: ${params.data.value}次`;
+                        } else if (params.dataType === 'edge') {
+                            return `${params.data.source} ↔ ${params.data.target}<br/>共现频率: ${params.data.value}次`;
+                        }
+                    }
+                },
+                legend: {
+                    data: Object.keys(tagData.tagCategories),
+                    top: 40, // 调整图例位置，避免与标题重叠
+                    left: 'center',
+                    textStyle: {
+                        fontSize: 12
+                    }
+                },
+                series: [{
+                    type: 'graph',
+                    layout: layoutType,
+                    data: networkData.nodes,
+                    links: networkData.edges,
+                    categories: Object.keys(tagData.tagCategories).map(category => ({ name: category })),
+                    roam: true,
+                    label: {
+                        show: true,
+                        position: 'right',
+                        formatter: '{b}',
+                        fontSize: 12
+                    },
+                    lineStyle: {
+                        color: 'source',
+                        curveness: 0.2
+                    },
+                    emphasis: {
+                        focus: 'adjacency',
+                        lineStyle: {
+                            width: 4
+                        }
+                    },
+                    edgeSymbol: ['none', 'arrow'],
+                    edgeSymbolSize: [4, 10],
+                    edgeLabel: {
+                        show: false
+                    },
+                    // 力导向图布局参数调整
+                    force: {
+                        // 增加节点间的斥力，使节点距离更远
+                        repulsion: 1000,
+                        // 增加边的引力，使关联的节点更接近
+                        gravity: 0.1,
+                        // 增加布局的迭代次数
+                        layoutAnimation: true
+                    },
+                    // 环形布局参数
+                    circular: {
+                        rotateLabel: true
+                    }
+                }],
+                title: {
+                    text: '电商营销岗位标签共现网络图',
+                    left: 'center',
+                    top: 10, // 调整标题位置
+                    textStyle: {
+                        fontSize: 16,
+                        fontWeight: 'normal',
+                        color: '#2c3e50'
+                    }
+                },
+                // 增加图形区域的内边距，为图例留出空间
+                grid: {
+                    top: 80,
+                    bottom: 20,
+                    left: 20,
+                    right: 20,
+                    containLabel: true
+                }
+            };
+            
+            chartInstances.network.setOption(option);
+        }
+        
+        // 初始化矩阵图
+        function initMatrixChart(type) {
+            const chartDom = document.getElementById('matrix-chart');
+            chartInstances.matrix = echarts.init(chartDom);
+            
+            const matrixData = tagData.generateCooccurrenceMatrix();
+            const tags = matrixData.tags;
+            const matrix = matrixData.matrix;
+            
+            // 准备热力图数据
+            const heatmapData = [];
+            for (let i = 0; i < tags.length; i++) {
+                for (let j = 0; j < tags.length; j++) {
+                    heatmapData.push([j, i, matrix[i][j] || '-']);
+                }
+            }
+            
+            let option = {
+                tooltip: {
+                    position: 'top',
+                    formatter: function(params) {
+                        const xIndex = params.value[0];
+                        const yIndex = params.value[1];
+                        const value = params.value[2];
+                        return `${tags[yIndex]} ↔ ${tags[xIndex]}<br/>共现次数: ${value}`;
+                    }
+                },
+                grid: {
+                    height: '80%',
+                    top: '10%',
+                    left: '15%',
+                    right: '10%'
+                },
+                xAxis: {
+                    type: 'category',
+                    data: tags,
+                    splitArea: {
+                        show: true
+                    },
+                    axisLabel: {
+                        rotate: 45,
+                        fontSize: 10
+                    }
+                },
+                yAxis: {
+                    type: 'category',
+                    data: tags,
+                    splitArea: {
+                        show: true
+                    },
+                    axisLabel: {
+                        fontSize: 10
+                    }
+                },
+                visualMap: {
+                    min: 0,
+                    max: 100,
+                    calculable: true,
+                    orient: 'vertical',
+                    left: 'right',
+                    top: 'center',
+                    inRange: {
+                        color: ['#dbeafe', '#93c5fd', '#3b82f6', '#1e3a8a']
+                    },
+                    textStyle: {
+                        color: '#333'
+                    }
+                },
+                series: [{
+                    name: '共现次数',
+                    type: 'heatmap',
+                    data: heatmapData,
+                    label: {
+                        show: false
+                    },
+                    emphasis: {
+                        itemStyle: {
+                            shadowBlur: 10,
+                            shadowColor: 'rgba(0, 0, 0, 0.5)'
+                        }
+                    }
+                }],
+                title: {
+                    text: '电商营销岗位标签共现矩阵',
+                    left: 'center',
+                    top: 10,
+                    textStyle: {
+                        fontSize: 16,
+                        fontWeight: 'normal',
+                        color: '#2c3e50'
+                    }
+                }
+            };
+            
+            chartInstances.matrix.setOption(option);
+        }
+        
+        // 初始化标签云预览
+        function initTagCloudPreview() {
+            const container = document.getElementById('tag-cloud-preview');
+            container.innerHTML = '';
+            
+            // 按频率排序
+            const sortedTags = tagData.top20Tags
+                .concat(tagData.allTags
+                    .filter(tag => !tagData.top20Tags.some(t => t.name === tag))
+                    .map(tag => ({ name: tag, value: Math.floor(Math.random() * 60) }))
+                )
+                .sort((a, b) => b.value - a.value);
+            
+            sortedTags.forEach(tag => {
+                const div = document.createElement('div');
+                div.className = 'tag-item';
+                
+                // 根据频率设置不同的样式
+                let freqClass = 'tag-freq-1';
+                if (tag.value > 100) freqClass = 'tag-freq-5';
+                else if (tag.value > 80) freqClass = 'tag-freq-4';
+                else if (tag.value > 60) freqClass = 'tag-freq-3';
+                else if (tag.value > 40) freqClass = 'tag-freq-2';
+                
+                div.classList.add(freqClass);
+                div.textContent = tag.name;
+                div.title = `${tag.name}: 出现${tag.value}次`;
+                
+                container.appendChild(div);
+            });
+        }
+        
+        // 绑定图表控制按钮事件
+        function bindChartControlButtons() {
+            document.querySelectorAll('.control-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const chart = this.getAttribute('data-chart');
+                    const type = this.getAttribute('data-type');
+                    
+                    // 更新按钮状态
+                    this.parentElement.querySelectorAll('.control-btn').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                    
+                    // 重新初始化对应图表
+                    switch(chart) {
+                        case 'wordcloud':
+                            initWordCloudChart(type);
+                            break;
+                        case 'network':
+                            initNetworkChart(type);
+                            break;
+                        case 'matrix':
+                            initMatrixChart(type);
+                            break;
+                    }
+                });
+            });
+        }
+        
+        // 窗口大小改变时重置图表大小
+        window.addEventListener('resize', function() {
+            Object.values(chartInstances).forEach(chart => {
+                if (chart && chart.resize) {
+                    chart.resize();
+                }
+            });
+        });
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', initCharts);
+    </script>
+</body>
+</html>
